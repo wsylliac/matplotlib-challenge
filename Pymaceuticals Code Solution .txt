@@ -1,0 +1,496 @@
+Module 5 Challenge 
+
+## The Study Results of the Mouse MetaData
+
+# Dependencies:
+import matplotlib.pyplot as plt
+plt.style.use('ggplot')
+import pandas as pd
+import scipy.stats as sts
+from scipy.stats import linregress
+from scipy import stats
+import numpy as np
+%matplotlib inline
+
+
+
+# Reading the mouse data and the study results:
+Mouse_metadata=pd.read_csv("Pymaceuticals/data/Mouse_metadata.csv")
+#mouse_metadata
+study_results=pd.read_csv("Pymaceuticals/data/Study_results.csv")
+#study_results
+
+# Combining the data into a single dataset:
+drug_regimen_results=pd.merge(Mouse_metadata, study_results, on="Mouse ID")
+drr=drug_regimen_results
+#drr.head()
+
+# Renaming the 'Age_months' column:
+drr=drr.rename(columns={"Age_months":"Age (months)"})
+drr.head()
+
+
+
+Testing the Dataset 
+
+# Get column data types:
+#drr.dtypes
+
+# Checking for missing values:
+#drr.isnull().sum()
+
+# Identify incomplete rows:
+#drr.count()
+
+
+
+
+## Summary Statistics for the Tumor Volume
+
+# Creating GroupBy object based upon "Drug Regimen" column:
+grouped_by_drug_df=drr.groupby(['Drug Regimen'])
+#grouped_by_drug_df.count().head(15)
+
+# Calculate mean, median, variance, standard deviation, and sem of the tumor volume for each drug: 
+volume_mean=grouped_by_drug_df['Tumor Volume (mm3)'].mean()
+#volume_mean
+volume_median=grouped_by_drug_df['Tumor Volume (mm3)'].median()
+#volume_median
+volume_variance=grouped_by_drug_df['Tumor Volume (mm3)'].var()
+#volume_variance
+volume_std_deviation=grouped_by_drug_df['Tumor Volume (mm3)'].std()
+#volume_std_deviation
+volume_sem=grouped_by_drug_df['Tumor Volume (mm3)'].sem()
+#volume_sem
+
+# Summary statistics data frame for change in tumor volume for each drug:
+t_volume_stats=pd.DataFrame({
+    'Volume Mean': volume_mean,
+    'Volume Median': volume_median,
+    'Volume Variance': volume_variance,
+    'Volume Standard Deviation': volume_std_deviation,
+    'Volume SEM': volume_sem
+})
+
+t_volume_stats
+
+
+
+
+
+
+## Data Points in Each of the Treatment Regimen
+
+# Counting how many data points in each drug:
+d_data_points=grouped_by_drug_df['Drug Regimen'].count().sort_values(ascending=False)
+#d_data_points
+
+
+
+
+## Pandas Bar Plot
+
+# Create a bar chart using pandas:
+data_points_chart_1=d_data_points.plot(kind='bar', figsize=(9, 6), color=['darkblue','mediumblue','royalblue','cornflowerblue','lightsteelblue','#008DB8','#00AAAA','#00C69C','#00E28E','#00FF80'], alpha=1, edgecolor='gray', align="center")
+
+# Set x-label, y-label, and a title:
+data_points_chart_1.set_title('Number of Data Points for Each Treatment',fontsize=20)
+data_points_chart_1.set_xlabel('Drug Regimen',fontsize=16, color='black')
+data_points_chart_1.set_ylabel("Number of Data Points",fontsize=16, color='black')
+
+# Set tick marks:
+for tick in data_points_chart_1.get_xticklabels():
+    tick.set_fontsize(12)
+    tick.set_rotation(40)
+    tick.set_color('black')
+for tick in data_points_chart_1.get_yticklabels():
+    tick.set_fontsize(12)
+    tick.set_color('black')
+
+# Set y limits:
+plt.ylim(0, 250)
+
+plt.show()
+
+
+
+## Matplotlib Bar Plot
+
+# Create a bar chart using matplotlib:
+x_axis = np.arange(len(d_data_points))
+data_points_chart_2=plt.bar(x_axis, d_data_points, color=['darkblue','mediumblue','royalblue','cornflowerblue','lightsteelblue','#008DB8','#00AAAA','#00C69C','#00E28E','#00FF80'], alpha=1, edgecolor='gray',align="center", width=.5)
+
+# Set tick marks for x:
+drug_name=['Capomulin','Ramicane','Ketapril','Naftisol','Zoniferol','Stelasyn','Placebo','Infubinol','Ceftamin','Propriva'] # Find the way to use df for this step to eliminate manual drug inpt ***start with: drug_name=drr['Drug Regimen'].unique()***
+tick_locations = [value for value in x_axis]
+plt.xticks(tick_locations, drug_name, rotation=40, color='black', size=12)
+plt.yticks(color='black', size=12)
+
+# Set the limits of the y axis:
+plt.ylim(0, max(d_data_points)+20)
+
+# Set the limits of the x axis:
+plt.xlim(-0.50, len(x_axis)-0.50)
+
+# Set a title, x-label, and y-label:
+plt.title('Number of Data Points for Each Treatment',fontsize=20)
+plt.xlabel('Drug Regimen',fontsize=16, color='black')
+plt.ylabel("Number of Data Points",fontsize=16, color='black')
+
+plt.show()
+
+
+
+
+# Change plot size:
+plt.rcParams['figure.figsize']=(9,6)
+# Run the above cell again.
+
+
+
+
+
+
+
+
+## Distribution of Female vs Male Mice in The Study
+
+
+# Extract total amount of mice in the study by its ID:
+total_mouse_count=drr['Mouse ID'].nunique()
+#total_mouse_count
+
+# Extract total amount of female mice:
+total_female_mice=drr.loc[drr['Sex']=='Female',:].nunique().iloc[0]
+#total_female_mice
+
+# Extract total amount of male mice:
+total_male_mice=drr.loc[drr['Sex']=='Male',:].nunique().iloc[0]
+#total_male_mice
+
+# Percentage of male and female mice in the study:
+male_pct=(total_male_mice/total_mouse_count)*100
+#male_pct #*****
+
+female_pct=(total_female_mice/total_mouse_count)*100
+#female_pct #*****
+
+# Create data frame for female and male mice distribution:
+distribution_by_sex_df=pd.DataFrame({
+    'Distribution': [male_pct, female_pct]},
+    index=['Male','Female'])
+
+#distribution_by_sex_df
+
+
+
+
+## Pandas Pie Chart
+
+# Create a pie chart for female vs male mice distribution using pandas:
+colors=['royalblue','lightsteelblue']
+explode=(0,0.05)
+pie_1=distribution_by_sex_df.plot(kind="pie", y='Distribution', figsize=(6,6), colors=colors,
+                                  startangle=140, explode=explode, shadow=True, fontsize=16,
+                                  autopct="%1.1f%%")
+pie_1.set_title('Distribution of Female vs Male Mice in The Study', fontsize=20)
+pie_1.set_ylabel('')
+plt.axis('equal')
+plt.legend('',frameon=False)
+
+plt.show()
+
+
+
+
+
+## Matplotlib Pie Chart
+
+# Create a pie chart for female vs male mice distribution using matplotlib:
+explode=(0,0.05)
+colors=['royalblue','lightsteelblue']
+data=distribution_by_sex_df['Distribution']
+pie_2=plt.pie(data, colors=colors, explode=explode, shadow=True, startangle=140,
+              labels=['Male', 'Female'], autopct="%1.1f%%")
+plt.title('Distribution of Female vs Male Mice in The Study', fontsize=20)
+#plt.legend(labels=data.index, loc="best")
+plt.axis("equal")
+plt.rcParams['figure.figsize']=(6,6)
+plt.rcParams['font.size']=(16)
+
+plt.show()
+
+# Run this cell 2 times
+
+
+
+
+
+
+
+
+## Final Tumor Volume of Each Mouse Treated with Capomulin, Ramicane, Infubinol, and Ceftamin
+
+# Extruct columns of interest from original data frame:
+new_drr_df=drr[['Mouse ID','Drug Regimen','Timepoint','Tumor Volume (mm3)']]
+#new_drr_df.head(10)
+
+
+
+# Sort new dataframe to extract final timepoint for each mouse ID:
+sorted_mouseid_timepoint_df=new_drr_df.sort_values(['Mouse ID','Timepoint'], ascending=False) # Sort new dataframe by columns 'Mouse ID' and 'Timepoint'.
+sorted_mouseid_timepoint_df
+
+no_dupl_sorted_df=sorted_mouseid_timepoint_df.drop_duplicates(subset='Mouse ID') # Drop duplicates in column 'Mouse ID' to leave only IDs with final timepoints (*** this can be used as well--> df.drop_duplicates(subset='Mouse ID', keep='first')***).
+#no_dupl_sorted_df
+
+
+
+
+### Final Tumor Volume of Each Mouse Treated with Capomulin
+
+
+# Extract final tumor volumes for each mouse treated by Capomulin regimen:
+capomulin_final_t_vol_df=no_dupl_sorted_df[no_dupl_sorted_df['Drug Regimen'] == 'Capomulin']
+capomulin_final_t_vol_df.sort_values(['Mouse ID']).head(10)
+
+
+
+
+## Final Tumor Volume of Each Mouse Treated with Ramicane
+
+# Extract final tumor volumes for each mouse treated by Ramicane regimen:
+ramicane_final_t_vol_df=no_dupl_sorted_df[no_dupl_sorted_df['Drug Regimen'] == 'Ramicane']
+ramicane_final_t_vol_df.sort_values(['Mouse ID']).head(10)
+
+
+
+# Quartile and IQR calculations:
+ramicane_vol=ramicane_final_t_vol_df['Tumor Volume (mm3)']
+
+ramicane_quartiles = ramicane_vol.quantile([.25,.5,.75])
+ramicane_lowerq = ramicane_quartiles[0.25]
+ramicane_upperq = ramicane_quartiles[0.75]
+ramicane_iqr = ramicane_upperq-ramicane_lowerq
+
+#print(f"The lower quartile of the final tumor volumes for Ramicane regimen is: {round(ramicane_lowerq,2)}")
+#print(f"The upper quartile of the final tumor volumes for Ramicane regimen is: {round(ramicane_upperq,2)}")
+#print(f"The interquartile range of the final tumor volumes for Ramicane regimen is: {round(ramicane_iqr,2)}")
+#print(f"The median of the final tumor volumes for Ramicane regimen is: {round(ramicane_quartiles[0.5],2)} ")
+
+# Potential outliers calculation:
+ramicane_lower_bound = ramicane_lowerq - (1.5*ramicane_iqr)
+ramicane_upper_bound = ramicane_upperq + (1.5*ramicane_iqr)
+
+#print(f"Values below {round(ramicane_lower_bound,2)} could be outliers.")    
+#print(f"Values above {round(ramicane_upper_bound,2)} could be outliers.")
+
+
+
+
+
+
+### Final Tumor Volume of Each Mouse Treated with Infubinol
+
+# Extract final tumor volumes for each mouse treated by Infubinol regimen:
+infubinol_final_t_vol_df=no_dupl_sorted_df[no_dupl_sorted_df['Drug Regimen'] == 'Infubinol']
+infubinol_final_t_vol_df.sort_values(['Mouse ID']).head(10)
+
+
+
+
+
+
+# Quartile and IQR calculations:
+infubinol_vol=infubinol_final_t_vol_df['Tumor Volume (mm3)']
+
+infubinol_quartiles = infubinol_vol.quantile([.25,.5,.75])
+infubinol_lowerq = infubinol_quartiles[0.25]
+infubinol_upperq = infubinol_quartiles[0.75]
+infubinol_iqr = infubinol_upperq-infubinol_lowerq
+
+#print(f"The lower quartile of the final tumor volumes for Infubinol regimen is: {round(infubinol_lowerq,2)}")
+#print(f"The upper quartile of the final tumor volumes for Infubinol regimen is: {round(infubinol_upperq,2)}")
+#print(f"The interquartile range of the final tumor volumes for Infubinol regimen is: {round(infubinol_iqr,2)}")
+#print(f"The median of the final tumor volumes for Infubinol regimen is: {round(infubinol_quartiles[0.5],2)} ")
+
+# Potential outliers calculation:
+infubinol_lower_bound = infubinol_lowerq - (1.5*infubinol_iqr)
+infubinol_upper_bound = infubinol_upperq + (1.5*infubinol_iqr)
+
+#print(f"Values below {round(infubinol_lower_bound,2)} could be outliers.")
+#print(f"Values above {round(infubinol_upper_bound,2)} could be outliers.")
+
+
+
+
+
+## Final Tumor Volume of Each Mouse treated with Ceftamin
+
+# Extract final tumor volumes for each mouse treated by Ceftamin regimen:
+ceftamin_final_t_vol_df=no_dupl_sorted_df[no_dupl_sorted_df['Drug Regimen'] == 'Ceftamin']
+ceftamin_final_t_vol_df.sort_values(['Mouse ID']).head(10)
+
+
+
+
+# Quartile and IQR calculations:
+ceftamin_vol=ceftamin_final_t_vol_df['Tumor Volume (mm3)']
+
+ceftamin_quartiles = ceftamin_vol.quantile([.25,.5,.75])
+ceftamin_lowerq = ceftamin_quartiles[0.25]
+ceftamin_upperq = ceftamin_quartiles[0.75]
+ceftamin_iqr = ceftamin_upperq-ceftamin_lowerq
+
+#print(f"The lower quartile of the final tumor volumes for Ceftamin regimen is: {round(ceftamin_lowerq,2)}")
+#print(f"The upper quartile of the final tumor volumes for Ceftamin regimen is: {round(ceftamin_upperq,2)}")
+#print(f"The interquartile range of the final tumor volumes for Ceftamin regimen is: {round(ceftamin_iqr,2)}")
+#print(f"The median of the final tumor volumes for Ceftamin regimen is: {round(ceftamin_quartiles[0.5],2)} ")
+
+# Potential outliers calculation:
+ceftamin_lower_bound = ceftamin_lowerq - (1.5*ceftamin_iqr)
+ceftamin_upper_bound = ceftamin_upperq + (1.5*ceftamin_iqr)
+
+#print(f"Values below {round(ceftamin_lower_bound,2)} could be outliers.")
+#print(f"Values above {round(ceftamin_upper_bound,2)} could be outliers.")
+
+
+
+
+
+
+
+## Potential Outliers of The Final Tumor Volumes For All Four Treatment Regimens
+
+# Final tumor volumes data for 4 top treatments:
+capomulin_vol=capomulin_final_t_vol_df['Tumor Volume (mm3)']
+ramicane_vol=ramicane_final_t_vol_df['Tumor Volume (mm3)']
+infubinol_vol=infubinol_final_t_vol_df['Tumor Volume (mm3)']
+ceftamin_vol=ceftamin_final_t_vol_df['Tumor Volume (mm3)']
+
+# Combine final tumor volumes data for 4 top treatments into a list: 
+volumes=[capomulin_vol, ramicane_vol, infubinol_vol, ceftamin_vol]
+
+# Outliers plot of the final tumor volumes:
+fig, ax=plt.subplots(1, figsize=(9, 6))
+bp=ax.boxplot(volumes, patch_artist=True)
+ax.set_title('Potential Outliers of The Final Tumor Volumes For Top Four Treatment Regimens', fontsize=20)
+ax.set_ylabel('Final Tumor Volume (mm3)', fontsize=16, color='black')
+ax.set_xticklabels(['Capomulin', 'Ramicane', 'Infubinol', 'Ceftamin'], fontsize=16, color='black')
+
+# Change fill color:
+for box in bp['boxes']:
+    box.set(facecolor='royalblue')
+
+# Change color and linewidth of the medians:
+for median in bp['medians']:
+    median.set(color='lightsteelblue', linewidth=3)
+
+# Change the fill and style of fliers:
+for flier in bp['fliers']:
+    flier.set(marker='o', markersize=10, markerfacecolor='crimson', alpha=1)
+
+plt.show()
+
+
+
+
+
+
+
+## Tumor Volume Change over Period of Study of a Random Mouse Treated with Capomulin
+
+
+# Extracting data for a target mouse treated with Capomulin:
+target_mouse_sorted=sorted_mouseid_timepoint_df.loc[sorted_mouseid_timepoint_df['Mouse ID']=='s185',:]
+target_mouse=target_mouse_sorted.sort_values('Timepoint')
+#target_mouse
+
+# Redusing dataframe to columns 'Timepoint' and 'Tumor Volume (mm3)':
+target_mouse_plot=target_mouse[['Timepoint','Tumor Volume (mm3)']]
+#target_mouse_plot
+
+# Change index to timepoints:
+target_mouse_plot=target_mouse_plot.set_index('Timepoint')
+#target_mouse_plot
+
+
+
+
+
+
+### Change of Tumor Volume over Period of Study for Mouse ID s185 Treated with Capomulin
+
+
+# Plot the chart:
+target_mouse_plot.plot(linewidth=3, color='royalblue', figsize=(12, 7))
+
+# Set x-label, y-label, and a title:
+plt.title('Change of Tumor Volume over Period of Study for Mouse ID s185 Treated with Capomulin', fontsize=24)
+plt.xlabel('Timepoint', fontsize=20, color='black')
+
+
+
+
+## Mouse Weight vs Average Tumor Volume for The Capomulin Treatment Regimen
+
+# Extruct columns of interest from original data frame:
+new_drr2_df=drr[['Mouse ID','Drug Regimen','Weight (g)','Tumor Volume (mm3)']]
+#new_drr2_df.head(10)
+
+# Extract Capomulin data only:
+capomulin_weight_df=new_drr2_df[new_drr2_df['Drug Regimen'] == 'Capomulin']
+#capomulin_weight_df
+
+# Calculate tumor volume average for each mouse:
+av_t_vol=capomulin_weight_df.groupby('Mouse ID')['Tumor Volume (mm3)'].mean()
+#av_t_vol
+
+# Reset index for new data:
+av_t_vol=av_t_vol.reset_index()
+#av_t_vol
+
+# Rename 'Tumor Volume (mm3)' column:
+av_t_vol=av_t_vol.rename(columns={'Tumor Volume (mm3)':'Avg Tumor Volume (mm3)'})
+#av_t_vol #*****
+
+# Extract columns of interest and remove duplicates:
+capomulin_weight2_df=capomulin_weight_df[['Mouse ID', 'Weight (g)']].drop_duplicates(subset='Mouse ID')
+#capomulin_weight2_df #*****
+
+# Merge data frame with mouse weight and data frame with avg tumor volume into a single dataset and sort by mouse ID:
+mouse_avg_t_vol_weight_df=pd.merge(capomulin_weight2_df, av_t_vol, on="Mouse ID")
+mouse_avg_t_vol_weight_df.sort_values('Mouse ID').head()
+
+
+
+
+
+# Generate a scatter plot of mouse weight vs average tumor volume for the Capomulin treatment regimen:
+plt.figure(figsize=(10,7))
+plt.scatter(mouse_avg_t_vol_weight_df.iloc[:,1],mouse_avg_t_vol_weight_df.iloc[:,2], color='royalblue', s=[70], alpha=1)
+plt.xlabel('Mouse Weight (g)', fontsize=16, color='black')
+plt.ylabel('Avg Tumor Volume (mm3)', fontsize=16, color='black')
+#size=[70]
+plt.title('Mouse Weight vs Average Tumor Volume for Capomulin Treatment Regimen', fontsize=20)
+
+# Add the linear regression equation and line to plot:
+x_values=mouse_avg_t_vol_weight_df['Weight (g)']
+y_values=mouse_avg_t_vol_weight_df['Avg Tumor Volume (mm3)']
+(slope, intercept,  rvalue, pvalue, stderr)=linregress(x_values, y_values)
+regress_values = x_values * slope + intercept
+plt.plot(x_values,regress_values,'lightsteelblue')
+line_eq = "y = " + str(round(slope,2)) + "x + " + str(round(intercept,2))
+#print(f'Linear regression equation: {line_eq}')
+
+plt.show()
+#plt.savefig('pic.png', dpi=80)
+
+
+
+# Computing the Pearson correlation coefficient between "Mouse Weight" and "Avg Tumor Volume":
+mouse_weight=mouse_avg_t_vol_weight_df.iloc[:,1]
+volume=mouse_avg_t_vol_weight_df.iloc[:,2]
+correlation = sts.pearsonr(mouse_weight,volume)
+
+#print(f"The correlation between both factors is {round(correlation[0],2)}")
